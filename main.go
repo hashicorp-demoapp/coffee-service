@@ -3,19 +3,16 @@ package main
 import (
 	"net/http"
 	"os"
-	"time"
 
-	tracing "github.com/DerekStrickland/learn-consul-jaeger/go-hckit/tracing"
 	"github.com/gorilla/mux"
+	hckit "github.com/hashicorp-demoapp/go-hckit"
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/nicholasjackson/env"
-	opentracing "github.com/opentracing/opentracing-go"
+
+	// opentracing "github.com/opentracing/opentracing-go"
 
 	"github.com/hashicorp-demoapp/coffee-service/config"
-	"github.com/hashicorp-demoapp/coffee-service/data"
-	"github.com/hashicorp-demoapp/coffee-service/service/v1"
-	"github.com/hashicorp-demoapp/coffee-service/service/v2"
-	"github.com/hashicorp-demoapp/coffee-service/service/v3"
+	"github.com/hashicorp-demoapp/coffee-service/service"
 )
 
 // Config format for application
@@ -25,15 +22,8 @@ type Config struct {
 	MetricsAddress string `json:"metrics_address"`
 }
 
-var logger hclog.Logger
-var logFormat = env.String("LOG_FORMAT", false, "text", "Log file format. [text|json]")
-var logLevel = env.String("LOG_LEVEL", false, "DEBUG", "Log level for output. [info|debug|trace|warn|error]")
-var logOutput = env.String("LOG_OUTPUT", false, "stdout", "Location to write log output, default is stdout, e.g. /var/log/web.log")
-var dbTraceEnabled = env.Bool("DB_TRACE_ENABLED", false, false, "Add instrumentation to DB facade to generate spans for all db calls")
-
 func main() {
-	logger = hclog.Default()
-	logger.Info("Starting coffee-service")
+	hclog.Default().Info("Starting coffee-service")
 
 	err := env.Parse()
 	if err != nil {
@@ -41,42 +31,39 @@ func main() {
 		os.Exit(1)
 	}
 
-	conf := config.NewFromEnv()
+	cfg := config.NewFromEnv()
 
-	tracer, closer := tracing.Init("coffee-service")
-	defer closer.Close()
-	opentracing.SetGlobalTracer(tracer)
-
-	// TODO: Only do this is API_VERSION is > 2
-	// load the db connection
-	repository, err := retryDBUntilReady()
+	closer, err := hckit.InitGlobalTracer("coffee-service")
 	if err != nil {
-		logger.Error("Timeout waiting for database connection")
+		cfg.Logger.Error("Unable to initialize Tracer", "error", err)
 		os.Exit(1)
 	}
+	defer closer.Close()
 
 	router := mux.NewRouter()
+	router.Use(hckit.TracingMiddleware)
 
 	// coffeeService := service.NewCoffeeService(repository, logger)
 	// router.Handle("/coffees", coffeeService).Methods("GET")
 
-	var coffeesRouter = router.PathPrefix("/coffees").Subrouter()
-	coffeesRouter.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.WriteHeader(http.StatusNotFound)
-    })
+	var api = router.PathPrefix("/coffees").Subrouter()
+	api.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	})
 
-	var v1Router = api.PathPrefix("/v1").Subrouter()
-    v1Router.Handle("", v1.NewCoffeeService(repository, logger)).Methods("GET")
-
-	var v2Router = api.PathPrefix("/v2").Subrouter()
-    v2Router.Handle("", v2.NewCoffeeService(repository, logger)).Methods("GET")
-
-	var v3Router = api.PathPrefix("/v3").Subrouter()
-    v3Router.Handle("", v3.NewCoffeeService(logger)).Methods("GET")
-
-	err = http.ListenAndServe(config.BindAddress, r)
+	handler, err := service.NewFromConfig(cfg)
 	if err != nil {
-		logger.Error("Unable to start server.", "error", err)
+		cfg.Logger.Error("Unable to initialize handler", "error", err)
+		os.Exit(1)
+	}
+
+	// Add path prefixes to handle traffic shaping from the service mesh
+	var versionedRouter = api.PathPrefix(cfg.Version).Subrouter()
+	versionedRouter.Handle("", handler).Methods("GET")
+
+	err = http.ListenAndServe(cfg.BindAddress, api)
+	if err != nil {
+		cfg.Logger.Error("Unable to start server.", "error", err)
 		os.Exit(1)
 	}
 }

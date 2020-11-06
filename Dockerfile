@@ -5,6 +5,6 @@ RUN addgroup api && \
 
 RUN mkdir /app
 
-COPY ./bin/product-api /app/product-api
+COPY ./bin/coffee-service /app/coffee-service
 
-ENTRYPOINT [ "/app/product-api" ]
+ENTRYPOINT [ "/app/coffee-service" ]
