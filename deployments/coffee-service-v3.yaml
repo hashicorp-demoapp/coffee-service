@@ -1,0 +1,72 @@
+# apiVersion: consul.hashicorp.com/v1alpha1
+# kind: ServiceDefaults
+# metadata:
+#   name: coffee-service
+# spec:
+#   protocol: "http"
+# ---
+# # Service to expose coffee-service
+
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: coffee-service
+# spec:
+#   selector:
+#     app: coffee-service
+#   ports:
+#     - name: http
+#       protocol: TCP
+#       port: 9090
+#       targetPort: 9090
+
+# ---
+
+# apiVersion: v1
+# kind: ServiceAccount
+# metadata:
+#   name: coffee-service
+# automountServiceAccountToken: true
+
+# ---
+# Coffee service
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coffee-service
+  version: v3
+  labels:
+    app: coffee-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coffee-service
+  template:
+    metadata:
+      labels:
+        app: coffee-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9102"
+        consul.hashicorp.com/connect-inject: "true"
+    spec:
+      serviceAccountName: coffee-service
+      containers:
+        - name: coffee-service
+          image: hashicorpdemoapp/coffee-service:v0.0.1
+          ports:
+            - containerPort: 9090
+            - containerPort: 9103
+          env:
+            - name: "API_VERSION"
+              value: "v3"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 15
+            timeoutSeconds: 1
+            periodSeconds: 10
+            failureThreshold: 30
