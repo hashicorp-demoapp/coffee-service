@@ -44,24 +44,21 @@ func main() {
 	router.Use(hckit.TracingMiddleware)
 
 	// coffeeService := service.NewCoffeeService(repository, logger)
-	// router.Handle("/coffees", coffeeService).Methods("GET")
+	//
 
-	var api = router.PathPrefix("/coffees").Subrouter()
-	api.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 
-	handler, err := service.NewFromConfig(cfg)
+	coffeeService, err := service.NewFromConfig(cfg)
 	if err != nil {
-		cfg.Logger.Error("Unable to initialize handler", "error", err)
+		cfg.Logger.Error("Unable to initialize coffeeService", "error", err)
 		os.Exit(1)
 	}
 
-	// Add path prefixes to handle traffic shaping from the service mesh
-	var versionedRouter = api.PathPrefix(cfg.Version).Subrouter()
-	versionedRouter.Handle("", handler).Methods("GET")
+	router.Handle("/coffees", coffeeService).Methods("GET")
 
-	err = http.ListenAndServe(cfg.BindAddress, api)
+	err = http.ListenAndServe(cfg.BindAddress, router)
 	if err != nil {
 		cfg.Logger.Error("Unable to start server.", "error", err)
 		os.Exit(1)

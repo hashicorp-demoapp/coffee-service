@@ -12,6 +12,7 @@ require (
 	github.com/hashicorp-demoapp/product-api-go v0.0.12
 	github.com/hashicorp/consul v1.8.4
 	github.com/hashicorp/go-hclog v0.14.1
+	github.com/hashicorp/go-memdb v1.2.1
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/lib/pq v1.2.0
 	github.com/nicholasjackson/env v0.6.0

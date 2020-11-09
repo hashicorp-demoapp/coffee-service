@@ -12,12 +12,12 @@ import (
 
 // CoffeeService is the service implementation for this microservice.
 type CoffeeService struct {
-	repository data.CoffeesRepository
+	repository data.Repository
 	logger     hclog.Logger
 }
 
 // NewCoffeeService is a factory method that returns a new instance of the CoffeeService.
-func NewCoffeeService(repository data.CoffeesRepository, l hclog.Logger) *CoffeeService {
+func NewCoffeeService(repository data.Repository, l hclog.Logger) *CoffeeService {
 	return &CoffeeService{repository, l}
 }
 
@@ -29,7 +29,7 @@ func (c *CoffeeService) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		c.logger.Trace(fmt.Sprintf("%+v", tracingCtx))
 	}
 
-	c.logger.Info("Handle Coffees")
+	c.logger.Info("Handle Coffees v2")
 
 	coffees, err := c.repository.FindCoffees()
 	if err != nil {

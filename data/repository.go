@@ -13,8 +13,8 @@ import (
 	"github.com/hashicorp-demoapp/coffee-service/data/model"
 )
 
-// CoffeesRepository is the command/query interface this respository supports.
-type CoffeesRepository interface {
+// Repository is the command/query interface this respository supports.
+type Repository interface {
 	FindCoffees() (model.Coffees, error)
 }
 
@@ -30,7 +30,7 @@ type DBConnection struct {
 // cause the app to go into a CrashLoopBackoff cycle.
 // TODO: Read git history to see if this retry. I'm suspecting this is in place
 // to allow behavioral tests to not fail while the environment spins up.
-func NewFromConfig(config *config.Config) (CoffeesRepository, error) {
+func NewFromConfig(config *config.Config) (Repository, error) {
 	st := time.Now()
 	dt := 1 * time.Second  // this should be an exponential backoff
 	mt := 60 * time.Second // max time to wait of the DB connection

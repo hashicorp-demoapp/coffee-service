@@ -8,19 +8,31 @@ import (
 	v1 "github.com/hashicorp-demoapp/coffee-service/service/v1"
 	v2 "github.com/hashicorp-demoapp/coffee-service/service/v2"
 	v3 "github.com/hashicorp-demoapp/coffee-service/service/v3"
+	"github.com/hashicorp/go-hclog"
 )
 
 // TODO: Refactor to IoC
 
+// CoffeeService is the service implementation for this microservice.
+type CoffeeService struct {
+	repository data.Repository
+	logger     hclog.Logger
+}
+
 // NewFromConfig is a factory method that returns a configured handler for the
 // configured ServiceVersion
 func NewFromConfig(cfg *config.Config) (http.Handler, error) {
-	var repository data.CoffeesRepository
+	var repository data.Repository
+	var err error
 
 	if cfg.Version == config.V1 || cfg.Version == config.V2 {
-		repository, err := data.NewFromConfig(cfg)
-		if err != nil {
-			cfg.Logger.Error("Timeout waiting for database connection")
+		if repository, err = data.NewFromConfig(cfg); err != nil {
+			cfg.Logger.Error(err.Error())
+			return nil, err
+		}
+	} else if cfg.Version == config.V3 {
+		if repository, err = data.NewInMemoryDB(cfg); err != nil {
+			cfg.Logger.Error(err.Error())
 			return nil, err
 		}
 	}
@@ -32,7 +44,7 @@ func NewFromConfig(cfg *config.Config) (http.Handler, error) {
 	case config.V2:
 		handler = v2.NewCoffeeService(repository, cfg.Logger)
 	case config.V3:
-		handler = v3.NewCoffeeService(cfg.Logger)
+		handler = v3.NewCoffeeService(repository, cfg.Logger)
 	}
 
 	return handler, nil
