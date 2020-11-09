@@ -9,7 +9,6 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp-demoapp/go-hckit v0.0.1
-	github.com/hashicorp-demoapp/product-api-go v0.0.12
 	github.com/hashicorp/consul v1.8.4
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-memdb v1.2.1

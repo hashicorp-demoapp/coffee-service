@@ -24,7 +24,7 @@ func NewCoffeeService(repository data.Repository, l hclog.Logger) *CoffeeService
 func (c *CoffeeService) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	c.logger.Info("Handle Coffees")
 
-	coffees, err := c.repository.FindCoffees()
+	coffees, err := c.repository.Find()
 	if err != nil {
 		c.logger.Error("Unable to get coffees from database", "error", err)
 		http.Error(rw, "Unable to get coffees from database", http.StatusInternalServerError)

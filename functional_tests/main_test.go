@@ -10,8 +10,7 @@ import (
 
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
-	"github.com/hashicorp-demoapp/product-api-go/data"
-	"github.com/hashicorp-demoapp/product-api-go/handlers"
+	v1 "github.com/hashicorp-demoapp/coffee-service/service/v1"
 )
 
 var runTest *bool = flag.Bool("run.test", false, "Should we run the tests")
@@ -53,15 +52,14 @@ func TestMain(m *testing.M) {
 	os.Exit(status)
 }
 
-type apiFeature struct {
-	mc *data.MockConnection
-	hc *handlers.Coffee
-	rw *httptest.ResponseRecorder
-	r  *http.Request
+type V1APIFeature struct {
+	svc *v1.CoffeeService
+	rw  *httptest.ResponseRecorder
+	r   *http.Request
 }
 
 func FeatureContext(s *godog.Suite) {
-	api := &apiFeature{}
+	v1api := V1APIFeature.initService()
 
 	api.initHandlers()
 

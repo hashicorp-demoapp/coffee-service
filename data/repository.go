@@ -15,11 +15,11 @@ import (
 
 // Repository is the command/query interface this respository supports.
 type Repository interface {
-	FindCoffees() (model.Coffees, error)
+	Find() (model.Coffees, error)
 }
 
-// DBConnection is a connection to the DB.
-type DBConnection struct {
+// PostgresRepository is a postgres implementation of the Repository interface.
+type PostgresRepository struct {
 	db *sqlx.DB
 }
 
@@ -36,13 +36,13 @@ func NewFromConfig(config *config.Config) (Repository, error) {
 	mt := 60 * time.Second // max time to wait of the DB connection
 
 	for {
-		var repository *DBConnection
+		var repository *PostgresRepository
 		var err error
 
 		if config.DBTraceEnabled {
-			repository, err = newWithTracing(config.ConnectionString)
+			repository, err = newPostgresWithTracing(config.ConnectionString)
 		} else {
-			repository, err = new(config.ConnectionString)
+			repository, err = newPostgres(config.ConnectionString)
 		}
 		if err == nil {
 			return repository, nil
@@ -61,18 +61,18 @@ func NewFromConfig(config *config.Config) (Repository, error) {
 }
 
 // new creates a new connection to the database
-func new(connection string) (*DBConnection, error) {
+func newPostgres(connection string) (*PostgresRepository, error) {
 	db, err := sqlx.Connect("postgres", connection)
 	if err != nil {
 		return nil, err
 	}
 
-	return &DBConnection{db}, nil
+	return &PostgresRepository{db: db}, nil
 }
 
 // newWithTracing wraps the connection with OpenCensus instrumentation
 // to allow db query inspection from OpenCensus compliant backends.
-func newWithTracing(connection string) (*DBConnection, error) {
+func newPostgresWithTracing(connection string) (*PostgresRepository, error) {
 	// Lifted from here:  https://github.com/opencensus-integrations/ocsql#jmoironsqlx
 	// Register our ocsql wrapper for the provided Postgres driver.
 	driverName, err := ocsql.Register("postgres", ocsql.WithAllTraceOptions())
@@ -91,15 +91,15 @@ func newWithTracing(connection string) (*DBConnection, error) {
 	// Wrap our *sql.DB with sqlx. use the original db driver name!!!
 	dbx := sqlx.NewDb(db, "postgres")
 
-	return &DBConnection{dbx}, nil
+	return &PostgresRepository{dbx}, nil
 }
 
-// FindCoffees returns all products from the database
+// Find returns all products from the database
 // Used to accept ctx opentracing.SpanContext
-func (c *DBConnection) FindCoffees() (model.Coffees, error) {
+func (r *PostgresRepository) Find() (model.Coffees, error) {
 	coffees := model.Coffees{}
 
-	err := c.db.Select(&coffees, "SELECT * FROM coffees")
+	err := r.db.Select(&coffees, "SELECT * FROM coffees")
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (c *DBConnection) FindCoffees() (model.Coffees, error) {
 	for n, coffee := range coffees {
 		coffeeIngredients := []model.CoffeeIngredients{}
 
-		err := c.db.Select(&coffeeIngredients, "SELECT ingredient_id FROM coffee_ingredients WHERE coffee_id=$1", coffee.ID)
+		err := r.db.Select(&coffeeIngredients, "SELECT ingredient_id FROM coffee_ingredients WHERE coffee_id=$1", coffee.ID)
 		if err != nil {
 			return nil, err
 		}

@@ -50,9 +50,9 @@ func NewInMemoryDB(config *config.Config) (Repository, error) {
 
 }
 
-// FindCoffees returns all products from the database
+// Find returns all coffees from the database
 // Used to accept ctx opentracing.SpanContext
-func (r *InMemoryRepository) FindCoffees() (model.Coffees, error) {
+func (r *InMemoryRepository) Find() (model.Coffees, error) {
 	txn := r.db.Txn(true)
 
 	iter, err := txn.Get(Coffee.String(), "id")

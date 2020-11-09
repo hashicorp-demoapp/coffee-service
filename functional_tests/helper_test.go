@@ -6,54 +6,32 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 
 	"github.com/cucumber/messages-go/v10"
 	"github.com/gorilla/mux"
-	"github.com/hashicorp-demoapp/product-api-go/data"
-	"github.com/hashicorp-demoapp/product-api-go/data/model"
-	"github.com/hashicorp-demoapp/product-api-go/handlers"
+	"github.com/hashicorp-demoapp/coffee-service/data"
+	"github.com/hashicorp-demoapp/coffee-service/data/model"
+	v1 "github.com/hashicorp-demoapp/coffee-service/service/v1"
 	"github.com/hashicorp/go-hclog"
 )
 
-func (api *apiFeature) initHandlers() {
-	// Coffee
-	mc := &data.MockConnection{}
-	mc.On("GetProducts").Return(model.Coffees{model.Coffee{ID: 1, Name: "Test"}}, nil)
-	mc.On("GetIngredientsForCoffee").Return(model.Ingredients{
-		model.Ingredient{ID: 1, Name: "Coffee"},
-		model.Ingredient{ID: 2, Name: "Milk"},
-		model.Ingredient{ID: 2, Name: "Sugar"},
-	})
-
-	l := hclog.Default()
-
-	api.mc = mc
-	api.hc = handlers.NewCoffee(mc, l)
+func (api *V1APIFeature) newService() {
+	repo := data.MockRepository{}
+	repo.On("Find").Return(model.Coffees{model.Coffee{ID: 1, Name: "Test"}}, nil)
+	api.svc = v1.NewCoffeeService(repo, hclog.Default())
 }
 
-func (api *apiFeature) initRouter(method, endpoint string, userID *string) error {
+func (api *V1APIFeature) initRouter(method, endpoint string, userID *string) error {
 	if strings.Contains(endpoint, "/coffees") {
-		api.hc.ServeHTTP(api.rw, api.r)
+		api.svc.ServeHTTP(api.rw, api.r)
 		return nil
 	}
 
 	return nil
 }
 
-func (api *apiFeature) theServerIsRunning() error {
-	connected, err := api.mc.IsConnected()
-	if err != nil {
-		return err
-	}
-	if connected == false {
-		return fmt.Errorf("Mock connection is not connected")
-	}
-	return nil
-}
-
-func (api *apiFeature) iMakeARequestTo(method, endpoint string) error {
+func (api *V1APIFeature) iMakeARequestTo(method, endpoint string) error {
 	api.rw = httptest.NewRecorder()
 	api.r = httptest.NewRequest(method, endpoint, nil)
 
@@ -65,7 +43,7 @@ func (api *apiFeature) iMakeARequestTo(method, endpoint string) error {
 	return nil
 }
 
-func (api *apiFeature) iMakeARequestToWhereIs(method, endpoint string, attribute, value string) error {
+func (api *V1APIFeature) iMakeARequestToWhereIs(method, endpoint string, attribute, value string) error {
 	api.rw = httptest.NewRecorder()
 	api.r = httptest.NewRequest(method, endpoint, nil)
 
@@ -80,7 +58,7 @@ func (api *apiFeature) iMakeARequestToWhereIs(method, endpoint string, attribute
 	return nil
 }
 
-func (api *apiFeature) iMakeARequestToWithTheFollowingRequestBody(method, endpoint string, body *messages.PickleStepArgument_PickleDocString) error {
+func (api *V1APIFeature) iMakeARequestToWithTheFollowingRequestBody(method, endpoint string, body *messages.PickleStepArgument_PickleDocString) error {
 	api.rw = httptest.NewRecorder()
 	api.r = httptest.NewRequest(method, endpoint, nil)
 
@@ -95,7 +73,7 @@ func (api *apiFeature) iMakeARequestToWithTheFollowingRequestBody(method, endpoi
 	return nil
 }
 
-func (api *apiFeature) aListOfProductsShouldBeReturned() error {
+func (api *V1APIFeature) aListOfProductsShouldBeReturned() error {
 	bd := model.Coffees{}
 
 	err := json.Unmarshal(api.rw.Body.Bytes(), &bd)
@@ -105,7 +83,7 @@ func (api *apiFeature) aListOfProductsShouldBeReturned() error {
 	return nil
 }
 
-func (api *apiFeature) thatProductsIngredientsShouldBeReturned() error {
+func (api *V1APIFeature) thatProductsIngredientsShouldBeReturned() error {
 	bd := model.Ingredients{}
 	err := json.Unmarshal(api.rw.Body.Bytes(), &bd)
 	if err != nil {
@@ -114,7 +92,7 @@ func (api *apiFeature) thatProductsIngredientsShouldBeReturned() error {
 	return nil
 }
 
-func (api *apiFeature) theResponseStatusShouldBe(statusCode string) error {
+func (api *V1APIFeature) theResponseStatusShouldBe(statusCode string) error {
 	switch statusCode {
 	case "OK":
 		if api.rw.Code != http.StatusOK {

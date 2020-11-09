@@ -1,7 +1,6 @@
 package data
 
 import (
-	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/hashicorp-demoapp/coffee-service/data/model"
@@ -12,8 +11,8 @@ type MockRepository struct {
 	mock.Mock
 }
 
-// GetProducts -
-func (c *MockRepository) GetProducts(ctx opentracing.SpanContext) (model.Coffees, error) {
+// Find mock stub
+func (c *MockRepository) Find() (model.Coffees, error) {
 	args := c.Called()
 
 	if m, ok := args.Get(0).(model.Coffees); ok {
