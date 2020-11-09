@@ -12,8 +12,8 @@ type MockRepository struct {
 }
 
 // Find mock stub
-func (c *MockRepository) Find() (model.Coffees, error) {
-	args := c.Called()
+func (r *MockRepository) Find() (model.Coffees, error) {
+	args := r.Called()
 
 	if m, ok := args.Get(0).(model.Coffees); ok {
 		return m, args.Error(1)

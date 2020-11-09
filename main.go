@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"net/http"
 	"os"
 
@@ -15,13 +16,6 @@ import (
 	"github.com/hashicorp-demoapp/coffee-service/service"
 )
 
-// Config format for application
-type Config struct {
-	DBConnection   string `json:"db_connection"`
-	BindAddress    string `json:"bind_address"`
-	MetricsAddress string `json:"metrics_address"`
-}
-
 func main() {
 	hclog.Default().Info("Starting coffee-service")
 
@@ -31,20 +25,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	cfg := config.NewFromEnv()
+	var cfg *config.Config
+	if cfg, err = config.NewFromEnv(); err != nil {
+		hclog.Default().Error("Error reading configuration", "error", err)
+		os.Exit(1)
+	}
 
-	closer, err := hckit.InitGlobalTracer("coffee-service")
-	if err != nil {
+	var closer io.Closer
+	if closer, err = hckit.InitGlobalTracer("coffee-service"); err != nil {
 		cfg.Logger.Error("Unable to initialize Tracer", "error", err)
 		os.Exit(1)
 	}
 	defer closer.Close()
+	cfg.Logger.Info("Tracing initialized")
 
 	router := mux.NewRouter()
 	router.Use(hckit.TracingMiddleware)
-
-	// coffeeService := service.NewCoffeeService(repository, logger)
-	//
 
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -55,6 +51,7 @@ func main() {
 		cfg.Logger.Error("Unable to initialize coffeeService", "error", err)
 		os.Exit(1)
 	}
+	cfg.Logger.Info("CoffeeService initialized")
 
 	router.Handle("/coffees", coffeeService).Methods("GET")
 
@@ -63,4 +60,6 @@ func main() {
 		cfg.Logger.Error("Unable to start server.", "error", err)
 		os.Exit(1)
 	}
+
+	cfg.Logger.Info("Started service", "bind", cfg.BindAddress, "metrics", cfg.MetricsAddress)
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 
 	// otlog "github.com/opentracing/opentracing-go/log"
 	"contrib.go.opencensus.io/integrations/ocsql"

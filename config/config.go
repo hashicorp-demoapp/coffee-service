@@ -2,10 +2,10 @@ package config
 
 import (
 	"fmt"
-	"strings"
+	"os"
+	"strconv"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/nicholasjackson/env"
 )
 
 // VersionKey supports a type safe string discriminator for service version.
@@ -105,27 +105,42 @@ type Config struct {
 }
 
 // NewFromEnv aggregates the environment variables to a datastructure.
-func NewFromEnv() *Config {
-	username := env.String(Username.String(), false, "postgres", "Postgress username")
-	password := env.String(Password.String(), false, "password", "Postgress password")
+func NewFromEnv() (*Config, error) {
+	// TODO: error handling
+	username := os.Getenv(Username.String())
+	password := os.Getenv(Password.String())
 	formatString := "host=localhost port=5432 user=%s password=%s dbname=products sslmode=disable"
+	bindAddress := os.Getenv(BindAddress.String())
+	metricsAddress := os.Getenv(MetricsAddress.String())
+	var dbTraceEnabled bool
+	var err error
+
+	dteRaw := DBTraceEnabled.String()
+	if len(dteRaw) < 4 {
+		dbTraceEnabled = false
+	} else {
+		if dbTraceEnabled, err = strconv.ParseBool(os.Getenv(DBTraceEnabled.String())); err != nil {
+			return nil, err
+		}
+	}
+	versionKey := VersionKeyFromString(os.Getenv(Version.String()))
 
 	// TODO: Think about moving towards opentelemetry interfaces.
 	// Output: *env.String("LOG_OUTPUT", false, "stdout", "Location to write log output, default is stdout, e.g. /var/log/web.log"),
-	logLevel := *env.String(LogLevel.String(), false, "DEBUG", "Log level for output. [info|debug|trace|warn|error]")
-	isJSONFormat := strings.ToLower(*env.String(LogFormat.String(), false, "text", "Log file format. [text|json]")) == "json"
-	logger := hclog.New(&hclog.LoggerOptions{
-		Name:       "coffee-service",
-		JSONFormat: isJSONFormat,
-		Level:      hclog.LevelFromString(logLevel),
-	})
+	// logLevel := os.Getenv(LogLevel.String())
+	// isJSONFormat := strings.ToLower(os.Getenv(LogFormat.String())) == "json"
+	// logger := hclog.New(&hclog.LoggerOptions{
+	// 	Name:       "coffee-service",
+	// 	JSONFormat: isJSONFormat,
+	// 	Level:      hclog.LevelFromString(logLevel),
+	// })
 
 	return &Config{
 		ConnectionString: fmt.Sprintf(formatString, username, password),
-		BindAddress:      *env.String(BindAddress.String(), false, ":9090", "Address to bind the service instance to"),
-		MetricsAddress:   *env.String(MetricsAddress.String(), false, ":9103", "Postgress password"),
-		DBTraceEnabled:   *env.Bool(DBTraceEnabled.String(), false, false, "Add instrumentation to DB facade to generate spans for all db calls"),
-		Logger:           logger,
-		Version:          VersionKeyFromString(*env.String(Version.String(), false, string(V1), "Version of the service to serve")),
-	}
+		BindAddress:      bindAddress,
+		MetricsAddress:   metricsAddress,
+		DBTraceEnabled:   dbTraceEnabled,
+		Logger:           hclog.Default(),
+		Version:          versionKey,
+	}, nil
 }
