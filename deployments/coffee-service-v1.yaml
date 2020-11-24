@@ -5,8 +5,6 @@ metadata:
 spec:
   protocol: "http"
 ---
-# Service to expose coffee-service
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -19,31 +17,13 @@ spec:
       protocol: TCP
       port: 9090
       targetPort: 9090
-
 ---
-
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: coffee-service
 automountServiceAccountToken: true
-
 ---
-# apiVersion: v1
-# kind: ConfigMap
-# metadata:
-#   name: db-configmap
-# data:
-#   config: |
-#     {
-#       "db_connection": "host=localhost port=5432 user=postgres password=password dbname=products sslmode=disable",
-#       "bind_address": ":9090",
-#       "metrics_address": ":9103"
-#     }
-
-# ---
-# Coffee Service
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -86,8 +66,6 @@ spec:
               value: "localhost:9090"
             - name: "METRICS_ADDRESS"
               value: "localhost:9103"
-            - name: "DB_TRACE_ENABLED"
-              value: "false"
             - name: "VERSION"
               value: "v1"
           livenessProbe:

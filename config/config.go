@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/go-hclog"
 )
@@ -112,35 +113,35 @@ func NewFromEnv() (*Config, error) {
 	formatString := "host=localhost port=5432 user=%s password=%s dbname=products sslmode=disable"
 	bindAddress := os.Getenv(BindAddress.String())
 	metricsAddress := os.Getenv(MetricsAddress.String())
-	var dbTraceEnabled bool
+	// TODO: Think about moving towards opentelemetry interfaces.
+	// Output: *env.String("LOG_OUTPUT", false, "stdout", "Location to write log output, default is stdout, e.g. /var/log/web.log"),
+	logLevel := os.Getenv(LogLevel.String())
+	isJSONFormat := strings.ToLower(os.Getenv(LogFormat.String())) == "json"
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:       "coffee-service",
+		JSONFormat: isJSONFormat,
+		Level:      hclog.LevelFromString(logLevel),
+	})
+
+	dbTraceEnabled := false
 	var err error
 
-	dteRaw := DBTraceEnabled.String()
+	dteRaw := os.Getenv(DBTraceEnabled.String())
 	if len(dteRaw) < 4 {
 		dbTraceEnabled = false
 	} else {
 		if dbTraceEnabled, err = strconv.ParseBool(os.Getenv(DBTraceEnabled.String())); err != nil {
-			return nil, err
+			logger.Error(fmt.Sprintf("Unable to parse %s", DBTraceEnabled.String()), "error", err)
 		}
 	}
 	versionKey := VersionKeyFromString(os.Getenv(Version.String()))
-
-	// TODO: Think about moving towards opentelemetry interfaces.
-	// Output: *env.String("LOG_OUTPUT", false, "stdout", "Location to write log output, default is stdout, e.g. /var/log/web.log"),
-	// logLevel := os.Getenv(LogLevel.String())
-	// isJSONFormat := strings.ToLower(os.Getenv(LogFormat.String())) == "json"
-	// logger := hclog.New(&hclog.LoggerOptions{
-	// 	Name:       "coffee-service",
-	// 	JSONFormat: isJSONFormat,
-	// 	Level:      hclog.LevelFromString(logLevel),
-	// })
 
 	return &Config{
 		ConnectionString: fmt.Sprintf(formatString, username, password),
 		BindAddress:      bindAddress,
 		MetricsAddress:   metricsAddress,
 		DBTraceEnabled:   dbTraceEnabled,
-		Logger:           hclog.Default(),
+		Logger:           logger,
 		Version:          versionKey,
 	}, nil
 }
