@@ -10,8 +10,10 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp-demoapp/go-hckit v0.0.1
 	github.com/hashicorp/consul v1.8.4
+	github.com/hashicorp/consul/api v1.7.0
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-memdb v1.2.1
+	github.com/hashicorp/go-plugin v1.0.1
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/lib/pq v1.2.0
 	github.com/nicholasjackson/env v0.6.0

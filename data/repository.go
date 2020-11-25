@@ -100,7 +100,7 @@ func newPostgresWithTracing(connection string) (*PostgresRepository, error) {
 func (r *PostgresRepository) Find() (model.Coffees, error) {
 	coffees := model.Coffees{}
 
-	err := r.db.Select(&coffees, "SELECT * FROM coffees")
+	err := r.db.Select(&coffees, "SELECT * FROM coffee")
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (r *PostgresRepository) Find() (model.Coffees, error) {
 	for n, coffee := range coffees {
 		coffeeIngredients := []model.CoffeeIngredients{}
 
-		err := r.db.Select(&coffeeIngredients, "SELECT ingredient_id FROM coffee_ingredients WHERE coffee_id=$1", coffee.ID)
+		err := r.db.Select(&coffeeIngredients, "SELECT ingredient_id FROM coffee_ingredient WHERE coffee_id=$1", coffee.ID)
 		if err != nil {
 			return nil, err
 		}

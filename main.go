@@ -46,6 +46,11 @@ func main() {
 		w.WriteHeader(http.StatusNotFound)
 	})
 
+	cfg.Logger.Info("Registering health service")
+	healthService := service.NewHealth(cfg.Logger)
+	router.Handle("/health", healthService).Methods("GET")
+
+	cfg.Logger.Info("Initializing coffee service")
 	coffeeService, err := service.NewFromConfig(cfg)
 	if err != nil {
 		cfg.Logger.Error("Unable to initialize coffeeService", "error", err)

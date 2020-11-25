@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/hashicorp-demoapp/coffee-service/config"
@@ -25,18 +26,22 @@ func NewFromConfig(cfg *config.Config) (http.Handler, error) {
 	var repository data.Repository
 	var err error
 
+	cfg.Logger.Debug(fmt.Sprintf("Resolving repository for version %v", cfg.Version))
 	if cfg.Version == config.V1 || cfg.Version == config.V2 {
+		cfg.Logger.Debug("Loading Postgres")
 		if repository, err = data.NewFromConfig(cfg); err != nil {
-			cfg.Logger.Error(err.Error())
+			cfg.Logger.Debug(fmt.Sprintf("Error loading postgres %+v", err))
 			return nil, err
 		}
 	} else if cfg.Version == config.V3 {
+		cfg.Logger.Debug("Loading in memory db")
 		if repository, err = data.NewInMemoryDB(cfg); err != nil {
-			cfg.Logger.Error(err.Error())
+			cfg.Logger.Debug(fmt.Sprintf("Error loading in memory db %+v", err))
 			return nil, err
 		}
 	}
 
+	cfg.Logger.Debug(fmt.Sprintf("Resolving service for version %v", cfg.Version))
 	var handler http.Handler
 	switch cfg.Version {
 	case config.V1:

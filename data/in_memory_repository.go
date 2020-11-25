@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/go-memdb"
@@ -35,19 +36,39 @@ type InMemoryRepository struct {
 // interface as Repository, but uses go-membdb internally to provide data. NOTE,
 // this interface requires build time tooling.
 func NewInMemoryDB(config *config.Config) (Repository, error) {
+	config.Logger.Debug("Attempting to load in memory db")
 	// Create a new data base
 	db, err := memdb.NewMemDB(createSchema())
 	if err != nil {
-		panic(err)
+		config.Logger.Debug(fmt.Sprintf("Failed to load in membory database with err %+v", err))
+		return &InMemoryRepository{}, err
 	}
 
 	repository := &InMemoryRepository{db}
 
-	repository.loadIngredients()
-	repository.loadCoffees()
+	config.Logger.Debug("Loading Ingredients")
+	err = repository.loadIngredients()
+	if err != nil {
+		config.Logger.Debug(fmt.Sprintf("Failed to load ingredients with err %+v", err))
+		return &InMemoryRepository{}, err
+	}
 
+	config.Logger.Debug("Loading coffees")
+	err = repository.loadCoffees()
+	if err != nil {
+		config.Logger.Debug(fmt.Sprintf("Failed to load coffees with err %+v", err))
+		return &InMemoryRepository{}, err
+	}
+
+	config.Logger.Debug("Loading coffee ingredients")
+	err = repository.loadCoffeeIngredients()
+	if err != nil {
+		config.Logger.Debug(fmt.Sprintf("Failed to load coffee ingredients with err %+v", err))
+		return &InMemoryRepository{}, err
+	}
+
+	config.Logger.Debug("Data loaded")
 	return repository, nil
-
 }
 
 // Find returns all coffees from the database
@@ -63,7 +84,7 @@ func (r *InMemoryRepository) Find() (model.Coffees, error) {
 	coffees := make([]model.Coffee, 0)
 
 	for coffee := iter.Next(); coffee != nil; coffee = iter.Next() {
-		coffees = append(coffees, coffee.(model.Coffee))
+		coffees = append(coffees, *coffee.(*model.Coffee))
 	}
 
 	for _, coffee := range coffees {
@@ -75,7 +96,7 @@ func (r *InMemoryRepository) Find() (model.Coffees, error) {
 		}
 
 		for ingredient := innerIter.Next(); ingredient != nil; ingredient = innerIter.Next() {
-			coffeeIngredients = append(coffeeIngredients, ingredient.(model.CoffeeIngredients))
+			coffeeIngredients = append(coffeeIngredients, *ingredient.(*model.CoffeeIngredients))
 		}
 
 		coffee.Ingredients = coffeeIngredients
@@ -89,33 +110,33 @@ func createSchema() *memdb.DBSchema {
 	// TODO Update to this model with tooling.
 	return &memdb.DBSchema{
 		Tables: map[string]*memdb.TableSchema{
-			"coffees": {
-				Name: "coffee",
+			Coffee.String(): {
+				Name: Coffee.String(),
 				Indexes: map[string]*memdb.IndexSchema{
 					"id": {
 						Name:    "id",
 						Unique:  true,
-						Indexer: &memdb.IntFieldIndex{Field: "id"},
+						Indexer: &memdb.IntFieldIndex{Field: "ID"},
 					},
 				},
 			},
-			"indredient": {
-				Name: "ingredients",
+			Ingredient.String(): {
+				Name: Ingredient.String(),
 				Indexes: map[string]*memdb.IndexSchema{
 					"id": {
 						Name:    "id",
 						Unique:  true,
-						Indexer: &memdb.IntFieldIndex{Field: "id"},
+						Indexer: &memdb.IntFieldIndex{Field: "ID"},
 					},
 				},
 			},
-			"coffee_ingredient": {
-				Name: "coffee_ingredients",
+			CoffeeIngredient.String(): {
+				Name: CoffeeIngredient.String(),
 				Indexes: map[string]*memdb.IndexSchema{
 					"id": {
 						Name:    "id",
 						Unique:  true,
-						Indexer: &memdb.IntFieldIndex{Field: "id"},
+						Indexer: &memdb.IntFieldIndex{Field: "ID"},
 					},
 				},
 			},
@@ -222,6 +243,7 @@ func (r *InMemoryRepository) loadCoffees() error {
 	txn.Commit()
 	return nil
 }
+
 func (r *InMemoryRepository) loadCoffeeIngredients() error {
 	timestamp := time.Now().String()
 	txn := r.db.Txn(true)
