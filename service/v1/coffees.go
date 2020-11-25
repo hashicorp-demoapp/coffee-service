@@ -22,14 +22,14 @@ func NewCoffeeService(repository data.Repository, l hclog.Logger) *CoffeeService
 
 // ServeHTTP handles incoming requests for the api coffees route
 func (c *CoffeeService) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	c.logger.Info("Handle Coffees")
+	c.logger.Debug("Handle Coffees")
 
 	coffees, err := c.repository.Find()
 	if err != nil {
 		c.logger.Error("Unable to get coffees from database", "error", err)
 		http.Error(rw, "Unable to get coffees from database", http.StatusInternalServerError)
 	}
-	c.logger.Info(fmt.Sprintf("Found %d coffees", len(coffees)))
+	c.logger.Debug(fmt.Sprintf("Found %d coffees", len(coffees)))
 
 	coffeesJSON, err := coffees.ToJSON()
 	if err != nil {

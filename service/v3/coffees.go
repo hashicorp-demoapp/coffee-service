@@ -29,14 +29,14 @@ func (c *CoffeeService) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		c.logger.Trace(fmt.Sprintf("%+v", tracingCtx))
 	}
 
-	c.logger.Info("Handle Coffees v3")
+	c.logger.Debug("Handle Coffees v3")
 
 	coffees, err := c.repository.Find()
 	if err != nil {
 		c.logger.Error("Unable to get coffees from database", "error", err)
 		http.Error(rw, "Unable to get coffees from database", http.StatusInternalServerError)
 	}
-	c.logger.Info(fmt.Sprintf("Found %d coffees", len(coffees)))
+	c.logger.Debug(fmt.Sprintf("Found %d coffees", len(coffees)))
 
 	coffeesJSON, err := coffees.ToJSON()
 	if err != nil {

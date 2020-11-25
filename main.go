@@ -37,7 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer closer.Close()
-	cfg.Logger.Info("Tracing initialized")
+	cfg.Logger.Debug("Tracing initialized")
 
 	router := mux.NewRouter()
 	router.Use(hckit.TracingMiddleware)
@@ -46,11 +46,11 @@ func main() {
 		w.WriteHeader(http.StatusNotFound)
 	})
 
-	cfg.Logger.Info("Registering health service")
+	cfg.Logger.Debug("Registering health service")
 	healthService := service.NewHealth(cfg.Logger)
 	router.Handle("/health", healthService).Methods("GET")
 
-	cfg.Logger.Info("Initializing coffee service")
+	cfg.Logger.Debug("Initializing coffee service")
 	coffeeService, err := service.NewFromConfig(cfg)
 	if err != nil {
 		cfg.Logger.Error("Unable to initialize coffeeService", "error", err)
