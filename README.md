@@ -18,3 +18,13 @@ All coffee related functionality from the product-api has been extracted over to
 - service-router.yaml - Consul config entry that can be applied to re-route traffic away from products-api based on route
 - service-splitter.yaml - Consul config entry that can be applied define canary deployment percentages
 - service-resolver.yaml - Consul config entry that can be applied to resolve canary deployment splits
+
+## Running locally
+
+First build the local docker image.
+
+`make build_docker_dev`
+
+Then run the image. You can supply whatever port, version, log level, and name you like
+
+`docker run -d -p 9090:9090 --env BIND_ADDRESS=localhost:9090 --env VERSION=v3 --env LOG_LEVEL=DEBUG --name=coffee-service hashicorpdemoapp/coffee-service:devlocal`
