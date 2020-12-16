@@ -16,17 +16,19 @@ import (
 	"github.com/hashicorp/go-hclog"
 )
 
-func (api *V1APIFeature) newService() {
+func (api *V1APIFeature) initService() {
 	repo := data.MockRepository{}
 	repo.On("Find").Return(model.Coffees{model.Coffee{ID: 1, Name: "Test"}}, nil)
-	api.svc = v1.NewCoffeeService(repo, hclog.Default())
+	api.svc = v1.NewCoffeeService(&repo, hclog.Default())
 }
 
-func (api *V1APIFeature) initRouter(method, endpoint string, userID *string) error {
-	if strings.Contains(endpoint, "/coffees") {
-		api.svc.ServeHTTP(api.rw, api.r)
-		return nil
-	}
+func (api *V1APIFeature) initHandlers() error {
+	mockRepo := &data.MockRepository{}
+	mockRepo.On("Find").Return(model.Coffees{model.Coffee{ID: 1, Name: "Test"}}, nil)
+
+	logger := hclog.Default()
+
+	api.svc = v1.NewCoffeeService(mockRepo, logger)
 
 	return nil
 }
@@ -35,7 +37,7 @@ func (api *V1APIFeature) iMakeARequestTo(method, endpoint string) error {
 	api.rw = httptest.NewRecorder()
 	api.r = httptest.NewRequest(method, endpoint, nil)
 
-	err := api.initRouter(method, endpoint, nil)
+	err := api.initHandlers()
 	if err != nil {
 		return err
 	}
@@ -50,7 +52,7 @@ func (api *V1APIFeature) iMakeARequestToWhereIs(method, endpoint string, attribu
 	vars := map[string]string{attribute: value}
 	api.r = mux.SetURLVars(api.r, vars)
 
-	err := api.initRouter(method, endpoint, nil)
+	err := api.initHandlers()
 	if err != nil {
 		return err
 	}
@@ -65,7 +67,7 @@ func (api *V1APIFeature) iMakeARequestToWithTheFollowingRequestBody(method, endp
 	rb := strings.NewReader(body.Content)
 	api.r.Body = ioutil.NopCloser(rb)
 
-	err := api.initRouter(method, endpoint, nil)
+	err := api.initHandlers()
 	if err != nil {
 		return err
 	}

@@ -59,18 +59,21 @@ type V1APIFeature struct {
 }
 
 func FeatureContext(s *godog.Suite) {
-	v1api := V1APIFeature.initService()
+	v1api := &V1APIFeature{}
 
-	api.initHandlers()
+	v1api.initService()
 
-	s.Step(`^the server is running$`, api.theServerIsRunning)
+	v1api.initHandlers()
 
-	s.Step(`^I make a "([^"]*)" request to "([^"]*)"$`, api.iMakeARequestTo)
-	s.Step(`^I make a "([^"]*)" request to "([^"]*)" where "([^"]*)" is "([^"]*)"$`, api.iMakeARequestToWhereIs)
-	s.Step(`^I make a "([^"]*)" request to "([^"]*)" with the following request body:$`, api.iMakeARequestToWithTheFollowingRequestBody)
+	// TODO: do we want this functionality
+	//s.Step(`^the server is running$`, v1api.theServerIsRunning)
 
-	s.Step(`^a list of products should be returned$`, api.aListOfProductsShouldBeReturned)
-	s.Step(`^a list of the product\'s ingredients should be returned$`, api.thatProductsIngredientsShouldBeReturned)
+	s.Step(`^I make a "([^"]*)" request to "([^"]*)"$`, v1api.iMakeARequestTo)
+	s.Step(`^I make a "([^"]*)" request to "([^"]*)" where "([^"]*)" is "([^"]*)"$`, v1api.iMakeARequestToWhereIs)
+	s.Step(`^I make a "([^"]*)" request to "([^"]*)" with the following request body:$`, v1api.iMakeARequestToWithTheFollowingRequestBody)
 
-	s.Step(`^the response status should be "([^"]*)"$`, api.theResponseStatusShouldBe)
+	s.Step(`^a list of products should be returned$`, v1api.aListOfProductsShouldBeReturned)
+	s.Step(`^a list of the product\'s ingredients should be returned$`, v1api.thatProductsIngredientsShouldBeReturned)
+
+	s.Step(`^the response status should be "([^"]*)"$`, v1api.theResponseStatusShouldBe)
 }
