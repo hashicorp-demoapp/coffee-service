@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/go-memdb"
 
 	"github.com/hashicorp-demoapp/coffee-service/config"
-	"github.com/hashicorp-demoapp/coffee-service/data/model"
+	"github.com/hashicorp-demoapp/coffee-service/data/entities"
 )
 
 // TableNameKey is a typesafe discriminator for table names
@@ -73,7 +73,7 @@ func NewInMemoryDB(config *config.Config) (Repository, error) {
 
 // Find returns all coffees from the database
 // Used to accept ctx opentracing.SpanContext
-func (r *InMemoryRepository) Find() (model.Coffees, error) {
+func (r *InMemoryRepository) Find() (entities.Coffees, error) {
 	txn := r.db.Txn(true)
 
 	iter, err := txn.Get(Coffee.String(), "id")
@@ -81,14 +81,14 @@ func (r *InMemoryRepository) Find() (model.Coffees, error) {
 		return nil, err
 	}
 
-	coffees := make([]model.Coffee, 0)
+	coffees := make([]entities.Coffee, 0)
 
 	for coffee := iter.Next(); coffee != nil; coffee = iter.Next() {
-		coffees = append(coffees, *coffee.(*model.Coffee))
+		coffees = append(coffees, *coffee.(*entities.Coffee))
 	}
 
 	for _, coffee := range coffees {
-		coffeeIngredients := make([]model.CoffeeIngredients, 0)
+		coffeeIngredients := make([]entities.CoffeeIngredients, 0)
 
 		innerIter, err := txn.Get(CoffeeIngredient.String(), "id")
 		if err != nil {
@@ -96,7 +96,7 @@ func (r *InMemoryRepository) Find() (model.Coffees, error) {
 		}
 
 		for ingredient := innerIter.Next(); ingredient != nil; ingredient = innerIter.Next() {
-			coffeeIngredients = append(coffeeIngredients, *ingredient.(*model.CoffeeIngredients))
+			coffeeIngredients = append(coffeeIngredients, *ingredient.(*entities.CoffeeIngredients))
 		}
 
 		coffee.Ingredients = coffeeIngredients
@@ -107,7 +107,7 @@ func (r *InMemoryRepository) Find() (model.Coffees, error) {
 
 func createSchema() *memdb.DBSchema {
 	// Create the DB schema
-	// TODO Update to this model with tooling.
+	// TODO Update to this entities with tooling.
 	return &memdb.DBSchema{
 		Tables: map[string]*memdb.TableSchema{
 			Coffee.String(): {
@@ -149,7 +149,7 @@ func (r *InMemoryRepository) loadIngredients() error {
 	txn := r.db.Txn(true)
 
 	// Insert some people
-	ingredients := []*model.Ingredient{
+	ingredients := []*entities.Ingredient{
 		{ID: 1, Name: "Espresso'", CreatedAt: timestamp, UpdatedAt: timestamp},
 		{ID: 2, Name: "Semi Skimmed Milk", CreatedAt: timestamp, UpdatedAt: timestamp},
 		{ID: 3, Name: "Hot Water", CreatedAt: timestamp, UpdatedAt: timestamp},
@@ -171,7 +171,7 @@ func (r *InMemoryRepository) loadCoffees() error {
 	timestamp := time.Now().String()
 	txn := r.db.Txn(true)
 
-	coffees := []*model.Coffee{
+	coffees := []*entities.Coffee{
 		{
 			ID:          1,
 			Name:        "Packer Spiced Latte",
@@ -248,7 +248,7 @@ func (r *InMemoryRepository) loadCoffeeIngredients() error {
 	timestamp := time.Now().String()
 	txn := r.db.Txn(true)
 
-	coffeeIngredients := []*model.CoffeeIngredients{
+	coffeeIngredients := []*entities.CoffeeIngredients{
 		{
 			ID:           1,
 			CoffeeID:     1,

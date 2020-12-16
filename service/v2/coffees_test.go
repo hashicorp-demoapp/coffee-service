@@ -7,14 +7,14 @@ import (
 	"testing"
 
 	"github.com/hashicorp-demoapp/coffee-service/data"
-	"github.com/hashicorp-demoapp/coffee-service/data/model"
+	"github.com/hashicorp-demoapp/coffee-service/data/entities"
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
 )
 
 func setupCoffeeHandler(t *testing.T) (*CoffeeService, *httptest.ResponseRecorder, *http.Request) {
 	c := &data.MockRepository{}
-	c.On("Find").Return(model.Coffees{model.Coffee{ID: 1, Name: "Test"}}, nil)
+	c.On("Find").Return(entities.Coffees{entities.Coffee{ID: 1, Name: "Test"}}, nil)
 
 	l := hclog.Default()
 
@@ -28,7 +28,7 @@ func TestCoffeesReturnsCoffees(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rw.Code)
 
-	bd := model.Coffees{}
+	bd := entities.Coffees{}
 	err := json.Unmarshal(rw.Body.Bytes(), &bd)
 	assert.NoError(t, err)
 }

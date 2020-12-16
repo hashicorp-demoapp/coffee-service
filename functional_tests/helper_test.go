@@ -11,20 +11,20 @@ import (
 	"github.com/cucumber/messages-go/v10"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp-demoapp/coffee-service/data"
-	"github.com/hashicorp-demoapp/coffee-service/data/model"
+	"github.com/hashicorp-demoapp/coffee-service/data/entities"
 	v1 "github.com/hashicorp-demoapp/coffee-service/service/v1"
 	"github.com/hashicorp/go-hclog"
 )
 
 func (api *V1APIFeature) initService() {
 	repo := data.MockRepository{}
-	repo.On("Find").Return(model.Coffees{model.Coffee{ID: 1, Name: "Test"}}, nil)
+	repo.On("Find").Return(entities.Coffees{entities.Coffee{ID: 1, Name: "Test"}}, nil)
 	api.svc = v1.NewCoffeeService(&repo, hclog.Default())
 }
 
 func (api *V1APIFeature) initHandlers() error {
 	mockRepo := &data.MockRepository{}
-	mockRepo.On("Find").Return(model.Coffees{model.Coffee{ID: 1, Name: "Test"}}, nil)
+	mockRepo.On("Find").Return(entities.Coffees{entities.Coffee{ID: 1, Name: "Test"}}, nil)
 
 	logger := hclog.Default()
 
@@ -76,7 +76,7 @@ func (api *V1APIFeature) iMakeARequestToWithTheFollowingRequestBody(method, endp
 }
 
 func (api *V1APIFeature) aListOfProductsShouldBeReturned() error {
-	bd := model.Coffees{}
+	bd := entities.Coffees{}
 
 	err := json.Unmarshal(api.rw.Body.Bytes(), &bd)
 	if err != nil {
@@ -86,7 +86,7 @@ func (api *V1APIFeature) aListOfProductsShouldBeReturned() error {
 }
 
 func (api *V1APIFeature) thatProductsIngredientsShouldBeReturned() error {
-	bd := model.Ingredients{}
+	bd := entities.Ingredients{}
 	err := json.Unmarshal(api.rw.Body.Bytes(), &bd)
 	if err != nil {
 		return err

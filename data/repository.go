@@ -11,12 +11,12 @@ import (
 	"contrib.go.opencensus.io/integrations/ocsql"
 
 	"github.com/hashicorp-demoapp/coffee-service/config"
-	"github.com/hashicorp-demoapp/coffee-service/data/model"
+	"github.com/hashicorp-demoapp/coffee-service/data/entities"
 )
 
 // Repository is the command/query interface this respository supports.
 type Repository interface {
-	Find() (model.Coffees, error)
+	Find() (entities.Coffees, error)
 }
 
 // PostgresRepository is a postgres implementation of the Repository interface.
@@ -97,8 +97,8 @@ func newPostgresWithTracing(connection string) (*PostgresRepository, error) {
 
 // Find returns all products from the database
 // Used to accept ctx opentracing.SpanContext
-func (r *PostgresRepository) Find() (model.Coffees, error) {
-	coffees := model.Coffees{}
+func (r *PostgresRepository) Find() (entities.Coffees, error) {
+	coffees := entities.Coffees{}
 
 	err := r.db.Select(&coffees, "SELECT * FROM coffee")
 	if err != nil {
@@ -106,7 +106,7 @@ func (r *PostgresRepository) Find() (model.Coffees, error) {
 	}
 
 	for n, coffee := range coffees {
-		coffeeIngredients := []model.CoffeeIngredients{}
+		coffeeIngredients := []entities.CoffeeIngredients{}
 
 		err := r.db.Select(&coffeeIngredients, "SELECT ingredient_id FROM coffee_ingredient WHERE coffee_id=$1", coffee.ID)
 		if err != nil {
