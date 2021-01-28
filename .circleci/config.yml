@@ -1,0 +1,103 @@
+version: 2
+jobs:
+  build-go:
+    docker:
+      - image: circleci/golang:1.13
+    environment:
+      GO111MODULE: "on"
+    working_directory: /go/src/github.com/hashicorpdemoapp/coffee-service
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: go get -u golang.org/x/sys/...
+      - run:
+          name: test application
+          command: go test -v ./...
+      - run:
+          name: build application (linux)
+          command: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/coffee-service
+      - persist_to_workspace:
+          root: /go/src/github.com/hashicorpdemoapp
+          paths:
+            - coffee-service
+
+  functional_test:
+    docker:
+      - image: circleci/golang:1.13
+    environment:
+      GO111MODULE: "on"
+    working_directory: /go/src/github.com/hashicorpdemoapp/coffee-service
+    steps:
+      - setup_remote_docker
+      - attach_workspace:
+          at: /go/src/github.com/hashicorpdemoapp
+      - run:
+          name: cucumber tests
+          command: make test_functional
+
+  publish-docker-release:
+    docker:
+      - image: circleci/golang:1.13
+    environment:
+      GO111MODULE: "on"
+    working_directory: /go/src/github.com/hashicorpdemoapp/coffee-service
+    steps:
+      - setup_remote_docker
+      - attach_workspace:
+          at: /go/src/github.com/hashicorpdemoapp
+      - run:
+          name: docker login
+          command: docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}
+      - run:
+          name: docker build
+          command: |
+            docker build -t hashicorpdemoapp/product-api:${CIRCLE_TAG} .
+      - run:
+          name: docker push
+          command: |
+            docker push hashicorpdemoapp/coffee-service:${CIRCLE_TAG}
+
+  publish-github-release:
+    docker:
+      - image: cibuilds/github:0.10
+    working_directory: ~/go/src/github.com/hashicorpdemoapp/coffee-service
+    steps:
+      - attach_workspace:
+          at: ~/go/src/github.com/hashicorpdemoapp
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -replace ${CIRCLE_TAG} ./bin/
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build-go
+      - functional_test: 
+          requires:
+            - build-go
+
+  build-and-release:
+    jobs:
+      - build-go:
+          filters:
+            tags:
+              only: /.*/
+      - publish-docker-release:
+          requires:
+            - build-go
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - publish-github-release:
+          requires:
+            - build-go
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
