@@ -30,6 +30,7 @@ const (
 // uisng go-membdb instead of postgres.
 type InMemoryRepository struct {
 	db *memdb.MemDB
+	config *config.Config
 }
 
 // NewInMemoryDB is the InMemoryRepository factory method. It fulfills the same
@@ -44,40 +45,42 @@ func NewInMemoryDB(config *config.Config) (Repository, error) {
 		return &InMemoryRepository{}, err
 	}
 
-	repository := &InMemoryRepository{db}
+	repository := &InMemoryRepository{db, config}
 
-	config.Logger.Debug("Loading Ingredients")
+	repository.config.Logger.Debug("Loading Ingredients")
 	err = repository.loadIngredients()
 	if err != nil {
-		config.Logger.Debug(fmt.Sprintf("Failed to load ingredients with err %+v", err))
+		repository.config.Logger.Debug(fmt.Sprintf("Failed to load ingredients with err %+v", err))
 		return &InMemoryRepository{}, err
 	}
 
-	config.Logger.Debug("Loading coffees")
+	repository.config.Logger.Debug("Loading coffees")
 	err = repository.loadCoffees()
 	if err != nil {
-		config.Logger.Debug(fmt.Sprintf("Failed to load coffees with err %+v", err))
+		repository.config.Logger.Debug(fmt.Sprintf("Failed to load coffees with err %+v", err))
 		return &InMemoryRepository{}, err
 	}
 
-	config.Logger.Debug("Loading coffee ingredients")
+	repository.config.Logger.Debug("Loading coffee ingredients")
 	err = repository.loadCoffeeIngredients()
 	if err != nil {
-		config.Logger.Debug(fmt.Sprintf("Failed to load coffee ingredients with err %+v", err))
+		repository.config.Logger.Debug(fmt.Sprintf("Failed to load coffee ingredients with err %+v", err))
 		return &InMemoryRepository{}, err
 	}
 
-	config.Logger.Debug("Data loaded")
+	repository.config.Logger.Debug("Data loaded")
 	return repository, nil
 }
 
 // Find returns all coffees from the database
 // Used to accept ctx opentracing.SpanContext
 func (r *InMemoryRepository) Find() (entities.Coffees, error) {
-	txn := r.db.Txn(true)
+	txn := r.db.Txn(false)
+	defer txn.Abort()
 
 	iter, err := txn.Get(Coffee.String(), "id")
 	if err != nil {
+		r.config.Logger.Error("coffee-service.data.InMemoryRepository.Find failed to load coffees", err)
 		return nil, err
 	}
 
@@ -92,6 +95,7 @@ func (r *InMemoryRepository) Find() (entities.Coffees, error) {
 
 		innerIter, err := txn.Get(CoffeeIngredient.String(), "id")
 		if err != nil {
+			r.config.Logger.Error("coffee-service.data.InMemoryRepository.Find failed to load ingredients", err)
 			return nil, err
 		}
 

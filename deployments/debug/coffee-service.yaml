@@ -43,7 +43,7 @@ spec:
       serviceAccountName: coffee-service
       containers:
         - name: coffee-service
-          image: hashicorpdemoapp/coffee-service:v0.0.1
+          image: coffee-service:debug
           ports:
             - containerPort: 9090
             - containerPort: 9102
@@ -51,7 +51,7 @@ spec:
             - name: "LOG_FORMAT"
               value: "text"
             - name: "LOG_LEVEL"
-              value: "INFO"
+              value: "DEBUG"
             - name: "BIND_ADDRESS"
               value: "localhost:9090"
             - name: "METRICS_ADDRESS"
