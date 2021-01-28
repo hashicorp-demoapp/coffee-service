@@ -20,9 +20,9 @@ type CoffeeService struct {
 	logger     hclog.Logger
 }
 
-// NewFromConfig is a factory method that returns a configured handler for the
+// NewCoffee is a factory method that returns a configured handler for the
 // configured ServiceVersion
-func NewFromConfig(cfg *config.Config) (http.Handler, error) {
+func NewCoffee(cfg *config.Config) (http.Handler, error) {
 	var repository data.Repository
 	var err error
 

@@ -15,9 +15,6 @@ All coffee related functionality from the product-api has been extracted over to
 - coffee-service-v1.yaml - Deployment for v1 of the service
 - coffee-service-v2.yaml - Deployment for v2 of the service
 - coffee-service-v3.yaml - Deployment for v3 of the service
-- service-router.yaml - Consul config entry that can be applied to re-route traffic away from products-api based on route
-- service-splitter.yaml - Consul config entry that can be applied define canary deployment percentages
-- service-resolver.yaml - Consul config entry that can be applied to resolve canary deployment splits
 
 ## Running locally
 

@@ -45,6 +45,8 @@ spec:
         prometheus.io/port: "9102"
         consul.hashicorp.com/connect-inject: "true"
         consul.hashicorp.com/connect-service-upstreams: "postgres:5432"
+        consul.hashicorp.com/service-meta-version: "v2"
+        consul.hashicorp.com/service-tags: "api"
     spec:
       serviceAccountName: coffee-service
       containers:

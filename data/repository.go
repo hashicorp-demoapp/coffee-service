@@ -26,12 +26,15 @@ type PostgresRepository struct {
 
 // NewFromConfig is the CoffeeRepository factory method. It encapsulates the Postgres DB.
 // It will attempt to create a connection, and keep retrying the database connection
-// until successful or it timeuts. When running the application on a scheduler it
+// until successful or times out. When running the application on a scheduler it
 // is possible (likely) that the app will come up before the database, this can
-// cause the app to go into a CrashLoopBackoff cycle.
-// TODO: Read git history to see if this retry. I'm suspecting this is in place
-// to allow behavioral tests to not fail while the environment spins up.
-func NewFromConfig(config *config.Config) (Repository, error) {
+// cause the app to go into a CrashLoopBackoff cycle. By defining a retry loop,
+// we are implementing circuit breaker, rather than just crashing on startup
+// if the db is unavailable.
+// TODO: this whole thing needs to be addressed.  Probably we want to move
+// the circuit breaking back to the lifecycle in main, and have this just
+// test IsConnected() or just try to make the call.
+func NewFromConfig(cfg *config.Config) (Repository, error) {
 	st := time.Now()
 	dt := 1 * time.Second  // this should be an exponential backoff
 	mt := 60 * time.Second // max time to wait of the DB connection
@@ -40,16 +43,16 @@ func NewFromConfig(config *config.Config) (Repository, error) {
 		var repository *PostgresRepository
 		var err error
 
-		if config.DBTraceEnabled {
-			repository, err = newPostgresWithTracing(config.ConnectionString)
+		if cfg.DBTraceEnabled {
+			repository, err = newPostgresWithTracing(cfg.ConnectionString)
 		} else {
-			repository, err = newPostgres(config.ConnectionString)
+			repository, err = newPostgres(cfg.ConnectionString)
 		}
 		if err == nil {
 			return repository, nil
 		}
 
-		config.Logger.Error("Unable to connect to database", "error", err)
+		cfg.Logger.Error("Unable to connect to database", "error", err)
 
 		// check if max time has elapsed
 		if time.Now().Sub(st) > mt {

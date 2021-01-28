@@ -1,11 +1,9 @@
 CONTAINER_NAME=hashicorpdemoapp/coffee-service
-DB_CONTAINER_NAME=hashicorpdemoapp/product-api-db
-CONTAINER_VERSION=v0.0.1
+DB_CONTAINER_NAME=hashicorpdemoapp/coffee-service
+CONTAINER_VERSION=v0.0.2
 
 test_functional:
-	shipyard run ./blueprint
 	cd ./functional_tests && go test -v -run.test true ./..
-	shipyard destroy
 
 build_linux:
 	CGO_ENABLED=0 GOOS=linux go build -o ./bin/coffee-service

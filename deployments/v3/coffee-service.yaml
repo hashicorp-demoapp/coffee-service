@@ -37,23 +37,25 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9102"
         consul.hashicorp.com/connect-inject: "true"
+        consul.hashicorp.com/service-meta-version: "v1"
+        consul.hashicorp.com/service-tags: "api"
     spec:
       serviceAccountName: coffee-service
       containers:
         - name: coffee-service
-          image: hashicorpdemoapp/coffee-service:v0.0.1
+          image: gcr.io/consul-k8s-256002/coffee-service:v3.0.0 #hashicorpdemoapp/coffee-service:v0.0.1
           ports:
             - containerPort: 9090
-            - containerPort: 9103
+            - containerPort: 9102
           env:
             - name: "LOG_FORMAT"
               value: "text"
             - name: "LOG_LEVEL"
               value: "INFO"
             - name: "BIND_ADDRESS"
-              value: "localhost:9090"
+              value: "127.0.0.1:9090"
             - name: "METRICS_ADDRESS"
-              value: "localhost:9103"
+              value: "127.0.0.1:9102"
             - name: "VERSION"
               value: "v3"
           livenessProbe:

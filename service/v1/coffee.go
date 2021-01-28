@@ -22,6 +22,7 @@ func NewCoffeeService(repository data.Repository, l hclog.Logger) *CoffeeService
 
 // ServeHTTP handles incoming requests for the api coffees route
 func (c *CoffeeService) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	// Flow of control
 	c.logger.Debug("Handle Coffees")
 
 	coffees, err := c.repository.Find()

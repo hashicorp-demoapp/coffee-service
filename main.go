@@ -1,19 +1,17 @@
 package main
 
 import (
-	"io"
+	"fmt"
+	"github.com/hashicorp-demoapp/coffee-service/config"
+	"github.com/hashicorp-demoapp/coffee-service/service"
 	"net/http"
 	"os"
 
 	"github.com/gorilla/mux"
-	hckit "github.com/hashicorp-demoapp/go-hckit"
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/nicholasjackson/env"
 
 	// opentracing "github.com/opentracing/opentracing-go"
-
-	"github.com/hashicorp-demoapp/coffee-service/config"
-	"github.com/hashicorp-demoapp/coffee-service/service"
 )
 
 func main() {
@@ -40,64 +38,60 @@ func main() {
 		os.Exit(1)
 	}
 	// Lifecycle event
-	hclog.Default().Info("Finished loading configuration from environment")
-
-	var closer io.Closer
-	// Lifecycle event
-	hclog.Default().Info("Initializing tracing")
-	if closer, err = hckit.InitGlobalTracer("coffee-service"); err != nil {
-		// Unrecoverable error
-		cfg.Logger.Error("Unable to initialize Tracer", "error", err)
-		os.Exit(1)
-	}
-	defer closer.Close()
-	// Lifecycle event
-	cfg.Logger.Info("Tracing initialized")
+	cfg.Logger.Info("Finished loading configuration from environment")
 
 	// Lifecycle event
 	cfg.Logger.Info("Initializing router")
 	router := mux.NewRouter()
 
-	// Add middleware config here
-	router.Use(hckit.TracingMiddleware)
+	/*
+	   Configure middleware here
+	*/
 
-	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	})
 	// Lifecycle event
 	cfg.Logger.Info("Router initialized")
 
 	// Lifecycle event
-	cfg.Logger.Info("Registering health service")
-	healthService := service.NewHealth(cfg.Logger)
-	router.Handle("/health", healthService).Methods("GET")
-	// Lifecycle event
-	cfg.Logger.Info("Health service registered")
+	cfg.Logger.Info("Registering not found handler")
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	})
 
 	// Component initialization
-	cfg.Logger.Info("Initializing coffee service")
-	coffeeService, err := service.NewFromConfig(cfg)
+	cfg.Logger.Info("Initializing HealthService")
+	healthService := service.NewHealth(cfg.Logger)
+	// Component initialized
+	cfg.Logger.Info("HealthService initialized")
+
+	// Lifecycle event
+	cfg.Logger.Info("Registering health handler")
+	router.Handle("/health", healthService).Methods("GET")
+	// Lifecycle event
+	cfg.Logger.Info("Health handler registered")
+
+	// Component initialization
+	cfg.Logger.Info(fmt.Sprintf("Initializing CoffeeService version %s", cfg.Version))
+	coffeeService, err := service.NewCoffee(cfg)
 	if err != nil {
 		// Unrecoverable error
-		cfg.Logger.Error("Unable to initialize coffeeService", "error", err)
+		cfg.Logger.Error("Unable to initialize CoffeeService", "error", err)
 		os.Exit(1)
 	}
 	// Component initialized
 	cfg.Logger.Info("CoffeeService initialized")
 
 	// Lifecycle event
-	cfg.Logger.Info("Registering coffee service")
+	cfg.Logger.Info("Registering coffee handler")
 	router.Handle("/coffees", coffeeService).Methods("GET")
 	// Lifecycle event
-	cfg.Logger.Info("Coffee service registered")
+	cfg.Logger.Info("Coffee handler registered")
 
+	// Lifecycle event
+	cfg.Logger.Info("Starting service listener", "bind", cfg.BindAddress)
 	err = http.ListenAndServe(cfg.BindAddress, router)
 	if err != nil {
 		// Unrecoverable error
 		cfg.Logger.Error("Unable to start server.", "error", err)
 		os.Exit(1)
 	}
-
-	// Lifecycle event
-	cfg.Logger.Info("Started service", "bind", cfg.BindAddress, "metrics", cfg.MetricsAddress)
 }
