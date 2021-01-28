@@ -43,7 +43,7 @@ spec:
       serviceAccountName: coffee-service
       containers:
         - name: coffee-service
-          image: gcr.io/consul-k8s-256002/coffee-service:v3.0.0 #hashicorpdemoapp/coffee-service:v0.0.1
+          image: hashicorpdemoapp/coffee-service:v0.0.1
           ports:
             - containerPort: 9090
             - containerPort: 9102
