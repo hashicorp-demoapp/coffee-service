@@ -8,7 +8,7 @@ All coffee related functionality from the product-api has been extracted over to
 
 - v1 provides all the core db lookup logic and a simple Jaeger instrumentation implementation
 - v2 improves the instrumentation position by leveraging [jmoiron/sqlx](https://github.com/jmoiron/sqlx) so that users can optionally deploy SQL_TRACE_ENABLED builds for query tracing via Jaeger
-- v3 improves the implementation by converting the service to a search node using local data, and thus sidestepping the database calls entirely
+- v3 improves the implementation by converting the service to a search node using in memory data, and thus sidestepping the database calls entirely
 
 ## Included configuration
 
